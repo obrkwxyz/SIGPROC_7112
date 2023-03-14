@@ -330,4 +330,66 @@ function [X_welch,btwindowlen,X_BT,ar_order,X_AR,music_order,X_music] = specdest
     X_music = pmusic(x, music_order);
 end
 
-    
+
+
+
+%% Q4 KOBRIEN
+pkg load signal
+#load('SPA2023-computer-exercises1-data/fm.mat');
+
+t= length(x)/fs;
+fprintf("The sample runs for %3.2f seconds\n",t)
+
+N = 2^13;
+window = N; Nfft = N
+overlap = .5;
+
+
+X  = 10*log10(pwelch(x,window,overlap,Nfft).^2);
+% Octave ignores un-ful Nfft windows and doesn't zero pad default.;
+
+
+str= strcat("Power spectral density of the FM Broadcast Channel, N= ", num2str(N));
+figure(1)
+  clf
+  subplot(2,3,[1 2 3])
+    plot(0 :2/N:(2)-(2/N), X)
+    title(str)
+    xlim([0 2])
+    ylim([0 120])
+    xticks([0:0.05:2])
+    yticks([0:5:120])
+    grid on
+    ylabel("Log-Mag (dB)")
+    xlabel("Normalised Frequency ($\times\pi$ rad/Sample)")
+  subplot(2,3,[4 5])
+    plot(0 :2/N:(2)-(2/N), X)
+    title("Zoomed section of the FM Broadcast Channel")
+    xlim([0.73 0.87])
+    ylim([40 120])
+    xticks([0.7:0.01:0.9])
+    grid on
+    ylabel("Log-Mag (dB)")
+    xlabel("Normalised Frequency ($\times\pi$ rad/Sample)")
+  subplot(2,3,[6])
+    plot(0 :2/N:(2)-(2/N), X)
+    title("Zoomed Symmetric component of FM Channel")
+    xlim([0.8 0.87])
+    ylim([40 120])
+    xticks([0.8:0.01:0.9])
+    grid on
+    ylabel("Log-Mag (dB)")
+    xlabel("Normalised Frequency ($\times\pi$ rad/Sample)")
+
+% FM Carriers are distinct due to their Bessel-curve like nature; also broadcast
+% FM is powerful in urban environments,  these will be the largest signals
+% present. In the given samples, there appears to be some LO spurs or IMD
+% present on the spectrum.
+
+% Commerical FM channels in known as Wideband-Frequency Modulation. This is a
+% typical 200 kHz wide channel to allow Pilot carriers (tones to allow cheap IF),
+% SUM (Mono, L+R) and DIFFERERNCE (stereo, L-R) channels and out of band
+% carriers (RDS, etc). Different modulation schemes are used for the OOB, notably
+% the DSBSC for the difference channel (38kHz) and BPSK for the RDS (57kHz)
+% See [FM Broadcast Radio](https://www.sigidwiki.com/wiki/FM_Broadcast_Radio)
+% for more detail.
