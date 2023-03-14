@@ -3,7 +3,7 @@
 % Signal Processing Applications 2023; Brian NG.
 % Computer Exercise 1
 % 7/3/23
-
+clc; clear all; close all;
 set(groot, 'defaultLegendInterpreter','latex');
 set(groot, 'defaultTextInterpreter','latex');
 
@@ -83,7 +83,7 @@ figure(1)
 % formatting is another way this could be visualised.
 
 %% Question 2:
-clc; clear all; close all
+clc; clear all;
 % A fundamental limitation of DFT-based spectrum estimation techniques is 
 % imposed by the number of available samples. Construct N samples of the 
 % signal, where N = (20,100,1000);
@@ -135,7 +135,7 @@ figure(2)
     xticks(48:2:104)
 
 
-% Through use of Cos, the resulting signal is real and hence two symmetric
+% Due to use of Cos, the resulting signal is real and hence two symmetric
 % bins are produced in the DFT. 
 
 % Within the first subplot where N=20, the frequency resolution is very
@@ -172,7 +172,7 @@ F3c = floor(F(3) * N(3));
 
 F_bins = [F1a, F1b, F1c; F2a, F2b, F2c; F3a, F3b, F3c]
 % We cannot resolve frequencies when they exist in the same bin (or even in
-% the adjacent bin) that  F1,F2,F3 show.
+% the adjacent bin) that  F1, F2, F3 show.
 
 
 % 2.1
@@ -236,79 +236,98 @@ figure(4)
 % signals that are non-periodic.
 
 %% Question 3:
-clc; clear all; close all
+clc; clear all;
 % Compare the following spectral estimation methods covered in the 
 % prescribed reading:
-% - Welch (Default Parameters)
+% - Welch (w/ Parameters)
 % - Blackman-Tukey
 % - AR (Burg method)
 % - MUSIC
-% Upon a N-Samples triple tone in white noise
+% Upon a N-Samples triple tone in complex,white noise
 
-N = [20, 200];
-f = [0.04 -0.05 0.5];
-A = [1 1 1];
 sigma = 0.1;
+F = [0.3 0.8 1.9]/2;
+A = [1 1 1];
+i=5;
 
-syms x(a,fn,n)
-x(a,fn,n) = exp(1j*2*pi*fn*n);
+for N = [20,200]
 
-% Random noise, variance of sigma
-w  = (sigma/sqrt(2)) * (randn(1,N(1))+1j*randn(1,N(1)));
+    [X_welch,btwindowlen,X_BT,ar_order,X_AR,music_order,X_music] = specdestimate(N,sigma,A,F);
 
-% Create the signals
-x1 = double( x(A(1), f(1), 0:(N(1)-1)));
-x2 = double( x(A(2), f(2), 0:(N(1)-1)));
-x3 = double( x(A(3), f(3), 0:(N(1)-1)));
+    figure(i)
+      subplot(4,1,1)
+        plot(0:(2)/length(X_welch):2-((2)/length(X_welch)),X_welch)
+        title("Welch's Method")
+      subplot(4,1,2)
+        plot(0:(2)/length(X_BT):2-((2)/length(X_BT)),abs(X_BT))
+        title("Blackman-Tukey : m = "+ btwindowlen)
+      subplot(4,1,3)
+        plot(0:(2)/length(X_AR):2-((2)/length(X_AR)),abs(X_AR))
+        title("AutoRegression (Burg Method): order= "+ ar_order)
+      subplot(4,1,4)
+        plot(0:(2)/length(X_music):2-((2)/length(X_music)),abs(X_music))
+        title("MUSIC: order= "+ music_order)
+      sgtitle("Power Spectral Density Estimates: N= "+ num2str(N))
+        for ii = 1:4
+            subplot(4,1,ii)
+            xlim([0 2])
+            xticks(0:0.1:2)
+            grid on
+            xlabel("Normalised Frequency ($\times\pi$ rad/Sample)")
+            ylabel("$|Mag|$")
+        end
+    i = i+1;
+end
 
-% Combine Signals
-x = x1+x2+x3+w;
+% What we see is that DFT based spectrum estimation requires a high number
+% of samples to estimate accurately. This is demonstrated with N=20 in
+% figure 5, in which Welch and Blackman-Tukey do not find peaks, or 
+% the frequency bin of the energy. Parametric based spectrum estimation
+% requires some heuristic tuning (testing variable model orders) however we
+% can see for the provided parameters, Burg-3 and MUSIC-8, the frequency
+% bins are estimated accurately, however the amplitudes and hence energy is
+% not.
+% Figure 6 shows the same three signals in noise with N=200; the DFT-based
+% estimators in this case function very well, and show a matched amplitude
+% (as created the signals). In this case, the model based estimators still
+% show peaks in the 0.3 and 0.8 frequency bins, however their peak is very
+% weak. This again, likely falls into some heuristic tuning and changing of
+% model order.
 
-% Use builtin pwelch()
-X_welch = pwelch(x);
+%% Functions
 
-% Perform Blackman-Tukey Method
-%   Windowed autocorrelation with Bartlett window
-%   Hamming / Hanning windows do not satisfy BT method.
-window_length = N(1)/4; % tunable parameter
-
-x_cov = xcorr(x);
-w_bt = bartlett(window_length);
-w_bt = [w_bt', zeros([1,length(x_cov)-length(w_bt)])];
-X_BT = abs(fft(x_cov.*w_bt));
-
-% Use builtin arburg()
-ar_order = 2;
-X_AR = pburg(x,ar_order);
-
-
-% Via MUSIC
-pmusic_order =8;
-X_music = pmusic(x, pmusic_order);
-
-
-figure(5)
-  subplot(4,1,1)
-    plot(X_welch)
-    xlim([0 length(X_welch)])
-    title("Power Spectral Estimate via pwelch()")
-  subplot(4,1,2)
-    plot(real(X_BT))
-    xlim([1 length(X_BT)])
-    title("Power Spectral Estimate via Blackman-Tukey, m= "+window_length)
-  subplot(4,1,3)
-    plot(real(X_AR))
-    xlim([0 length(X_AR)])
-    title("Power Spectral Estimate via AutoRegression (Burg Method) - pburg(), order= "+ar_order)
-  subplot(4,1,4)
-    plot(real(X_music))
-    xlim([0 length(X_music)])
-    title("Power Spectral Estimate via MUSIC - pmusic(), order= "+ pmusic_order)
- 
-
-
-%     hold on
-%     plot(imag(X_BT)
-
+function [X_welch,btwindowlen,X_BT,ar_order,X_AR,music_order,X_music] = specdestimate(N,sigma,Amps,Fns)
+  % Complex noise; Gaussian Distributed
+    w  = (sigma/sqrt(2)) * (randn(1,N)+1j*randn(1,N));
+    
+  % Symbolic, the lazy mans way.
+    syms x(a,fn,n)
+    x(a,fn,n) = exp(1j*2*pi*fn*n);
+  % Create three signals
+    x1 = double( x(Amps(1), Fns(1), 0:(N-1)));
+    x2 = double( x(Amps(2), Fns(2), 0:(N-1)));
+    x3 = double( x(Amps(3), Fns(3), 0:(N-1)));
+  % Combine signals and noise
+    x = x1+x2+x3+w;
+    
+  % 3.1 - Welch Method
+    X_welch = pwelch(x);
+    
+  % 3.2 - Blackman-Tukey Method
+    %   Windowed autocorrelation with Bartlett window (Ham,Hann do not satisfy BT)
+    btwindowlen = N/4; % Tunable
+    w_bt = bartlett(btwindowlen);
+    x_cov = xcorr(x);
+    w_bt = [w_bt', zeros([1,length(x_cov)-length(w_bt)])]; % Zero packed (matrix length match)
+    X_BT = abs(fft(x_cov.*w_bt));
+    
+  % 3.3 - Burg AR Method
+    ar_order = 3; %Tuneable
+    X_AR = pburg(x,ar_order);
+    
+  % 3.4 - MUlitple SIgnal Classification
+    music_order = 8;  % Tuneable
+    X_music = pmusic(x, music_order);
+end
 
     
