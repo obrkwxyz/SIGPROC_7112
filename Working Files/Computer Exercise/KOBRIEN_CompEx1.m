@@ -333,14 +333,14 @@ end
 
 
 
-%% Q4 KOBRIEN
+% Q4 KOBRIEN
 pkg load signal
-#load('SPA2023-computer-exercises1-data/fm.mat');
+load('SPA2023-computer-exercises1-data/fm.mat');
 
 t= length(x)/fs;
 fprintf("The sample runs for %3.2f seconds\n",t)
-
-N = 2^13;
+n =12
+N = 2^n;
 window = N; Nfft = N
 overlap = .5;
 
@@ -349,47 +349,78 @@ X  = 10*log10(pwelch(x,window,overlap,Nfft).^2);
 % Octave ignores un-ful Nfft windows and doesn't zero pad default.;
 
 
-str= strcat("Power spectral density of the FM Broadcast Channel, N= ", num2str(N));
+str= strcat("Power spectral density of the FM Broadcast Channel, N= 2^ ", num2str(n));
 figure(1)
   clf
   subplot(2,3,[1 2 3])
-    plot(0 :2/N:(2)-(2/N), X)
+    plot(0 :1/N:(1)-(1/N), X)
     title(str)
-    xlim([0 2])
+    xlim([0 1])
     ylim([0 120])
     xticks([0:0.05:2])
     yticks([0:5:120])
     grid on
     ylabel("Log-Mag (dB)")
-    xlabel("Normalised Frequency ($\times\pi$ rad/Sample)")
-  subplot(2,3,[4 5])
-    plot(0 :2/N:(2)-(2/N), X)
+    xlabel("Normalised Frequency ($\times 2\pi$ rad/Sample)")
+  subplot(2,3,[4])
+    plot(0 :1/N:(1)-(1/N), X)
     title("Zoomed section of the FM Broadcast Channel")
-    xlim([0.73 0.87])
+    xlim([0.35 0.45])
     ylim([40 120])
-    xticks([0.7:0.01:0.9])
+    xticks([0.35:0.01:0.45])
     grid on
     ylabel("Log-Mag (dB)")
-    xlabel("Normalised Frequency ($\times\pi$ rad/Sample)")
-  subplot(2,3,[6])
-    plot(0 :2/N:(2)-(2/N), X)
-    title("Zoomed Symmetric component of FM Channel")
-    xlim([0.8 0.87])
+    xlabel("Normalised Frequency ($\times 2\pi$ rad/Sample)")
+  subplot(2,3,[5 6])
+    plot(0 :1/N:(1)-(1/N), X)
+    title("Zoomed 'Symmetric' component of FM Channel")
+    xlim([0.4 0.44])
     ylim([40 120])
-    xticks([0.8:0.01:0.9])
+    xticks([0.4:0.005:0.44])
+    yticks([40:5:120])
     grid on
     ylabel("Log-Mag (dB)")
-    xlabel("Normalised Frequency ($\times\pi$ rad/Sample)")
+    xlabel("Normalised Frequency ($\times 2\pi$ rad/Sample)")
+    hold on
+    text(0.41,90, "19kHz Pilot")
+    text(0.401,118, "Carrier @ 800kHz offset")
+    text(0.428, 50, "OOB/ RDS Subchannels")
 
-% FM Carriers are distinct due to their Bessel-curve like nature; also broadcast
-% FM is powerful in urban environments,  these will be the largest signals
-% present. In the given samples, there appears to be some LO spurs or IMD
-% present on the spectrum.
 
-% Commerical FM channels in known as Wideband-Frequency Modulation. This is a
-% typical 200 kHz wide channel to allow Pilot carriers (tones to allow cheap IF),
-% SUM (Mono, L+R) and DIFFERERNCE (stereo, L-R) channels and out of band
+% FM Carriers are distinct due to their Bessel-curve-with-horns appearance;
+% The main peak is carrier / mixing oscillator; the "Horns" are due to the 19kHz
+% Pilot Tones
+% Broadcast FM is powerful in urban environments,  these will be the largest
+% signals present. In the given samples, there appears to be some LO spurs or IMD
+% present on the spectrum.  Samples look to be 8-bit IQ, and best guess is
+% capture from RTLSDR(RTL2832U) or derivative SDR.
+
+% Commerical FM channels are known to use Wideband-Frequency Modulation. This is
+% a typical 200 kHz wide channel to allow Pilot carriers (tones to allow cheap
+% IF), SUM (Mono, L+R) and DIFFERERNCE (stereo, L-R) channels and out of band
 % carriers (RDS, etc). Different modulation schemes are used for the OOB, notably
 % the DSBSC for the difference channel (38kHz) and BPSK for the RDS (57kHz)
 % See [FM Broadcast Radio](https://www.sigidwiki.com/wiki/FM_Broadcast_Radio)
 % for more detail.
+
+% I suspect the spectrum may look more familiar if we use the fft shift. This
+% figure now shows the "curtains" / digital filter roll off from the receiver
+% itself; further, its easier to see the noise floor and spurs from this view
+figure(2)
+  clf
+    plot(0 :1/N:(1)-(1/N), fftshift(X))
+    title(str)
+    xlim([0 1])
+    ylim([0 120])
+    xticks([0:0.05:2])
+    yticks([0:5:120])
+    hold on
+    grid on
+    ylabel("Log-Mag (dB)")
+    xlabel("Normalised Frequency ($\times 2\pi$ rad/Sample)")
+    plot([0 1],[47.5,47.5],'r')
+    text(0.5,108, "Local Oscillator")
+    text(0.8,108, "WFM Broadcast")
+    text(0.3,45,"Noise Floor",'color','red')
+    text(0.13,65, "IMD/ Spurs")
+    text(0.06,25, "Filter roll-off 'Curtains'")
