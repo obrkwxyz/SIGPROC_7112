@@ -3,6 +3,18 @@
 % Signal Processing Applications 2023; Brian NG.
 % Computer Exercise 1
 % 7/3/23
+% NOTE:
+% I have included all functions in the footer of this file.
+% Relative pathing is used and this file should be ran from the parent of decompressed zip, i.e.
+% ROOT/
+% |- KOBRIEN_CompEx1.m
+% |- SPA2023-computer-exercises1-data/
+% |  |- 1.wav
+% |  |- 2.wav
+% |  |- etc...
+% |- etc...
+
+%%
 clc; clear all; close all;
 set(groot, 'defaultLegendInterpreter','latex');
 set(groot, 'defaultTextInterpreter','latex');
@@ -306,7 +318,7 @@ N = 2^n;
 window = N; Nfft = N
 overlap = .5; % Default is 0.5, play with parameter sometimes.
 
-X  = 10*log10(pwelch(x,window,overlap,Nfft).^2);
+X  = psdwelch(x,window,overlap,Nfft);
 % Octave ignores un-full Nfft windows and doesn't zero pad default;
 % Double check matlab behaviour
 
@@ -390,8 +402,64 @@ figure(fig_n)
     
     
 %% Q5
+wavs = ls("SPA2023-computer-exercises1-data/*.wav")
+[x1,fs] = audioread(wavs(1,:)); % did check all 44.1khz sample rate
+[x2,fs] = audioread(wavs(2,:));
+[x3,fs] = audioread(wavs(3,:));
+[x4,fs] = audioread(wavs(4,:));
+
+#sample is two channel (L,R); combine to make it a mono audio source (L+R);
+x1 = stereo2mono(x1);
+x2 = stereo2mono(x2);
+x3 = stereo2mono(x3);
+x4 = stereo2mono(x4);
+
+n = 10; % 2^n point FFT.
+N = 2^n; window = N; Nfft = N; overlap = .5;
+xx = 0:1/N:0.5;
+
+X1 = psdWelch(x1,window,overlap,Nfft);
+X2 = psdWelch(x2,window,overlap,Nfft);
+X3 = psdWelch(x3,window,overlap,Nfft);
+X4 = psdWelch(x4,window,overlap,Nfft);
+
+figure(fig_n)
+  fig_n = fig_n+1;
+  clf
+  subplot(4,1,1)
+    plot(xx, X1)
+    title("Power Spectral Density of X1 - Bottle")
+  subplot(4,1,2)
+    plot(xx, X2)
+    title("Power Spectral Density of X2 - E Mu Proteus C3")
+  subplot(4,1,3)
+    plot(xx, X3)
+    title("Power Spectral Density of X3 - Kawaii Bell C3")
+  subplot(4,1,4)
+    plot(xx, X4)
+    title("Power Spectral Density of X4 - Kawaii Bass C2")
+  sgtitle("PSD of Musical Instruments")
+  for i=1:4
+    subplot(4,1,i)
+      xlim([0 0.5])
+      ylabel("Log-Mag (dB)")
+      xlabel("Normalised Frequency ($\times 2\pi$ rad/Sample)")
+      xticks([0:0.05:1])
+      yticks([-120:20:40])
+      grid on
+  end
+fprintf("The X1 - Bottle sample runs for %3.2f seconds\n",length(x1)/fs)
+    sound(x1,fs), pause(2)
+fprintf("The X2 - E Mu Proteus C3 sample runs for %3.2f seconds\n",length(x2)/fs)
+    sound(x2,fs), pause(2)
+fprintf("The X3 - Kawaii Bass C3 sample runs for %3.2f seconds\n",length(x3)/fs)
+    sound(x3,fs), pause(2)
+fprintf("The X4 - Kawaii Bass C2 sample runs for %3.2f seconds\n",length(x4)/fs)
+    sound(x4,fs)
 
 %% Q6
+
+wav = audioread("A1880047SPA.wav")
 
 %% Functions
 
@@ -427,4 +495,12 @@ function [X_welch,btwindowlen,X_BT,ar_order,X_AR,music_order,X_music] = specdest
   % 3.4 - MUlitple SIgnal Classification
     music_order = 8;  % Tuneable
     X_music = pmusic(x, music_order);
+end
+
+function [x] = stereo2mono(xn)
+    x =  (xn(:,1)' + xn(:,2)')./2;
+end
+
+function [X] = psdWelch(x,window,overlap,Nfft)
+    X  = 10*log10(pwelch(x,window,overlap,Nfft).^2);
 end
