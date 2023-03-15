@@ -8,7 +8,7 @@ set(groot, 'defaultLegendInterpreter','latex');
 set(groot, 'defaultTextInterpreter','latex');
 
 %% Question 1:
-clc; clear all; close all
+clc; clear all; close all; fig_n=1;
 % Consider a matrix of 4 random variables at three timesteps; determine the
 % autocovariance manually; compare with the covariance function.
 % 1.1
@@ -70,7 +70,8 @@ end
 % When the x(N) correlates with y(N) it is positive covariance; a large
 % covariance leads to a clear diagonal heatmap;
 
-figure(1)
+figure(fig_n)
+    fig_n = fig_n+1;
     fig = heatmap(y_cov);
     colormap(parula)
     fig.YDisplayData = flipud(fig.YDisplayData); 
@@ -102,7 +103,8 @@ X1 = abs(fft(x1)).^2;
 X2 = abs(fft(x2)).^2;
 X3 = abs(fft(x3)).^2;
 
-figure(2)
+figure(fig_n)
+  fig_n = fig_n+1;
   sgtitle("DFT$(x(n) = 1\cdot\cos(2\pi0.05n) + 1\cdot\cos(2\pi0.1n) + " + ...
       "1\cdot\cos(2\pi0.102n))$")
   subplot(3,3,[1,2,3])
@@ -185,7 +187,8 @@ XW1 = abs(fft(x1.*w1')).^2;
 XW2 = abs(fft(x2.*w2')).^2;
 XW3 = abs(fft(x3.*w3')).^2;
 
-figure(3)
+figure(fig_n)
+  fig_n = fig_n+1;
     sgtitle("DFT$(x(n)\times w(n))$ - Hamming window DFT")
   subplot(3,3,[1,2,3])
     plot(0:N(1)-1, XW1)
@@ -216,7 +219,8 @@ figure(3)
     xlim([48 104])
     xticks(48:2:104)
 
-figure(4)
+figure(fig_n)
+  fig_n = fig_n+1;
     plot(0:N(3)-1, X3)
     hold on
     plot(0:N(3)-1, XW3)
@@ -248,13 +252,11 @@ clc; clear all;
 sigma = 0.1;
 F = [0.3 0.8 1.9]/2;
 A = [1 1 1];
-i=5;
 
 for N = [20,200]
-
-    [X_welch,btwindowlen,X_BT,ar_order,X_AR,music_order,X_music] = specdestimate(N,sigma,A,F);
-
-    figure(i)
+  [X_welch,btwindowlen,X_BT,ar_order,X_AR,music_order,X_music] = specdestimate(N,sigma,A,F);
+  figure(fig_n)
+    fig_n = fig_n+1;
       subplot(4,1,1)
         plot(0:(2)/length(X_welch):2-((2)/length(X_welch)),X_welch)
         title("Welch's Method")
@@ -276,7 +278,6 @@ for N = [20,200]
             xlabel("Normalised Frequency ($\times\pi$ rad/Sample)")
             ylabel("$|Mag|$")
         end
-    i = i+1;
 end
 
 % What we see is that DFT based spectrum estimation requires a high number
@@ -294,47 +295,8 @@ end
 % weak. This again, likely falls into some heuristic tuning and changing of
 % model order.
 
-%% Functions
-
-function [X_welch,btwindowlen,X_BT,ar_order,X_AR,music_order,X_music] = specdestimate(N,sigma,Amps,Fns)
-  % Complex noise; Gaussian Distributed
-    w  = (sigma/sqrt(2)) * (randn(1,N)+1j*randn(1,N));
-    
-  % Symbolic, the lazy mans way.
-    syms x(a,fn,n)
-    x(a,fn,n) = exp(1j*2*pi*fn*n);
-  % Create three signals
-    x1 = double( x(Amps(1), Fns(1), 0:(N-1)));
-    x2 = double( x(Amps(2), Fns(2), 0:(N-1)));
-    x3 = double( x(Amps(3), Fns(3), 0:(N-1)));
-  % Combine signals and noise
-    x = x1+x2+x3+w;
-    
-  % 3.1 - Welch Method
-    X_welch = pwelch(x);
-    
-  % 3.2 - Blackman-Tukey Method
-    %   Windowed autocorrelation with Bartlett window (Ham,Hann do not satisfy BT)
-    btwindowlen = N/4; % Tunable
-    w_bt = bartlett(btwindowlen);
-    x_cov = xcorr(x);
-    w_bt = [w_bt', zeros([1,length(x_cov)-length(w_bt)])]; % Zero packed (matrix length match)
-    X_BT = abs(fft(x_cov.*w_bt));
-    
-  % 3.3 - Burg AR Method
-    ar_order = 3; %Tuneable
-    X_AR = pburg(x,ar_order);
-    
-  % 3.4 - MUlitple SIgnal Classification
-    music_order = 8;  % Tuneable
-    X_music = pmusic(x, music_order);
-end
-
-
-
-
-% Q4 KOBRIEN
-pkg load signal
+%% Q4
+% pkg load signal # Octave funnyness
 load('SPA2023-computer-exercises1-data/fm.mat');
 
 t= length(x)/fs;
@@ -342,15 +304,15 @@ fprintf("The sample runs for %3.2f seconds\n",t)
 n =12
 N = 2^n;
 window = N; Nfft = N
-overlap = .5;
-
+overlap = .5; % Default is 0.5, play with parameter sometimes.
 
 X  = 10*log10(pwelch(x,window,overlap,Nfft).^2);
-% Octave ignores un-ful Nfft windows and doesn't zero pad default.;
-
+% Octave ignores un-full Nfft windows and doesn't zero pad default;
+% Double check matlab behaviour
 
 str= strcat("Power spectral density of the FM Broadcast Channel, N= 2^ ", num2str(n));
-figure(1)
+figure(fig_n)
+  fig_n = fig_n+1;
   clf
   subplot(2,3,[1 2 3])
     plot(0 :1/N:(1)-(1/N), X)
@@ -406,7 +368,8 @@ figure(1)
 % I suspect the spectrum may look more familiar if we use the fft shift. This
 % figure now shows the "curtains" / digital filter roll off from the receiver
 % itself; further, its easier to see the noise floor and spurs from this view
-figure(2)
+figure(fig_n)
+  fig_n = fig_n+1;
   clf
     plot(0 :1/N:(1)-(1/N), fftshift(X))
     title(str)
@@ -424,3 +387,44 @@ figure(2)
     text(0.3,45,"Noise Floor",'color','red')
     text(0.13,65, "IMD/ Spurs")
     text(0.06,25, "Filter roll-off 'Curtains'")
+    
+    
+%% Q5
+
+%% Q6
+
+%% Functions
+
+function [X_welch,btwindowlen,X_BT,ar_order,X_AR,music_order,X_music] = specdestimate(N,sigma,Amps,Fns)
+  % Complex noise; Gaussian Distributed
+    w  = (sigma/sqrt(2)) * (randn(1,N)+1j*randn(1,N));
+    
+  % Symbolic, the lazy mans way.
+    syms x(a,fn,n)
+    x(a,fn,n) = exp(1j*2*pi*fn*n);
+  % Create three signals
+    x1 = double( x(Amps(1), Fns(1), 0:(N-1)));
+    x2 = double( x(Amps(2), Fns(2), 0:(N-1)));
+    x3 = double( x(Amps(3), Fns(3), 0:(N-1)));
+  % Combine signals and noise
+    x = x1+x2+x3+w;
+    
+  % 3.1 - Welch Method
+    X_welch = pwelch(x);
+    
+  % 3.2 - Blackman-Tukey Method
+    %   Windowed autocorrelation with Bartlett window (Ham,Hann do not satisfy BT)
+    btwindowlen = N/4; % Tunable
+    w_bt = bartlett(btwindowlen);
+    x_cov = xcorr(x);
+    w_bt = [w_bt', zeros([1,length(x_cov)-length(w_bt)])]; % Zero packed (matrix length match)
+    X_BT = abs(fft(x_cov.*w_bt));
+    
+  % 3.3 - Burg AR Method
+    ar_order = 3; %Tuneable
+    X_AR = pburg(x,ar_order);
+    
+  % 3.4 - MUlitple SIgnal Classification
+    music_order = 8;  % Tuneable
+    X_music = pmusic(x, music_order);
+end
