@@ -8,6 +8,7 @@
 % Relative pathing is used and this file should be ran from the parent of decompressed zip, i.e.
 % ROOT/
 % |- KOBRIEN_CompEx1.m
+% |- A1880046_SPA.wav
 % |- SPA2023-computer-exercises1-data/
 % |  |- 1.wav
 % |  |- 2.wav
